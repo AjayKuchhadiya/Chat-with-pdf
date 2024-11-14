@@ -1,0 +1,5 @@
+streamlit
+fitz  # PyMuPDF
+sentence-transformers
+requests
+unittest
