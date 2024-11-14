@@ -1,7 +1,6 @@
 import streamlit as st
 from modules.data_processing import process_uploaded_files
-from modules.rag import generate_response
-from search import get_answer
+from modules.search import get_answer
 
 # Initialize Streamlit App
 st.title("AI Chat with PDF Knowledge Base")

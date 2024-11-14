@@ -1,5 +1,5 @@
 import os
-from store import create_db
+from modules.store import create_db
 
 def process_uploaded_files(file):
     file_path = os.path.join("data/uploads", file.name)

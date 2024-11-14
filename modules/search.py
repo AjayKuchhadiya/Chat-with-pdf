@@ -2,7 +2,7 @@ from langchain.chains import RetrievalQA
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import FAISS
 from sentence_transformers import SentenceTransformer
-from store import create_embeddings  
+from modules.store import create_embeddings  
 from dotenv import load_dotenv
 
 load_dotenv()
