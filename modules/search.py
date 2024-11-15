@@ -1,35 +1,44 @@
-import os
-import json
 from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import FAISS
-from modules.store import create_embeddings
+from langchain.vectorstores import FAISS
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain.prompts import PromptTemplate
+from langchain.chains.question_answering import load_qa_chain
 from langchain_groq import ChatGroq
+from dotenv import load_dotenv
 
-METADATA_FILE = "data/metadata.json"
+load_dotenv()
+
+# Initialize gemini embeddings
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
+
+def get_conversational_chain():
+    prompt_template = """
+    Answer the question as detailed as possible from the provided context. If the answer is not in the provided context, say, 
+    "The answer is not available in the context." Avoid providing incorrect information.
+
+    Context:\n{context}\n
+    Question:\n{question}\n
+    Answer:
+    """
+    model = ChatGroq(model="llama3-8b-8192", temperature=0.3)
+    prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+    return chain
+
 
 def get_answer(query):
-    if not os.path.exists(METADATA_FILE):
-        return "No documents have been processed yet."
+    # Load the FAISS vector store
+    vectordb = FAISS.load_local("db", embeddings=embeddings, allow_dangerous_deserialization=True)
 
-    with open(METADATA_FILE, "r") as f:
-        metadata = json.load(f)
-
-    best_response = None
-    highest_score = -1
-    source_pdf = None
-
-    # Search across all vector stores
-    for pdf_name, vector_store_path in metadata.items():
-        vectordb = FAISS.load_local(vector_store_path, embeddings=create_embeddings, allow_dangerous_deserialization=True)
-        retrieved_docs = vectordb.similarity_search_with_score(query, k=3)
-
-        for doc, score in retrieved_docs:
-            if score > highest_score:
-                highest_score = score
-                best_response = doc.page_content
-                source_pdf = pdf_name
-
-    if best_response is None:
+    # Retrieve relevant documents
+    docs = vectordb.similarity_search(query, k=5)
+    if not docs:
         return "No relevant document found for this query."
 
-    return f"Answer: {best_response}\n(Source: {source_pdf})"
+    # Use the conversational chain to generate the response
+    chain = get_conversational_chain()
+    response = chain({"input_documents": docs, "question": query}, return_only_outputs=True)
+
+    return response["output_text"]
