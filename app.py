@@ -8,9 +8,9 @@ st.title("AI Chat with PDF Knowledge Base")
 # Upload PDFs
 uploaded_files = st.file_uploader("Upload PDFs", accept_multiple_files=True, type="pdf")
 if uploaded_files:
-    st.write("Processing uploaded files...")
-    for file in uploaded_files:
-        process_uploaded_files(file)
+    if st.button("Process Documents"):
+        st.write("Processing uploaded files...")
+        process_uploaded_files(uploaded_files)  # Process each file separately
 
 # Chat Interface
 query = st.text_input("Ask a question about the uploaded PDFs:")

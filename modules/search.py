@@ -1,29 +1,35 @@
+import os
+import json
 from langchain.chains import RetrievalQA
-from langchain_groq import ChatGroq
 from langchain_community.vectorstores import FAISS
-from sentence_transformers import SentenceTransformer
-from modules.store import create_embeddings  
-from dotenv import load_dotenv
+from modules.store import create_embeddings
+from langchain_groq import ChatGroq
 
-load_dotenv()
+METADATA_FILE = "data/metadata.json"
 
-def get_answer(query): 
-    
-    # Load the FAISS vector store using SentenceTransformer embeddings
-    vectordb = FAISS.load_local("db", embeddings=create_embeddings, allow_dangerous_deserialization=True)
+def get_answer(query):
+    if not os.path.exists(METADATA_FILE):
+        return "No documents have been processed yet."
 
-    # Make the retriever
-    retriever = vectordb.as_retriever(search_kwargs={"k": 10}, search_type="mmr")  
+    with open(METADATA_FILE, "r") as f:
+        metadata = json.load(f)
 
-    groq = ChatGroq(temperature=0, model_name="llama3-8b-8192")
+    best_response = None
+    highest_score = -1
+    source_pdf = None
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=groq,
-        chain_type="stuff",
-        retriever=retriever
-    )
+    # Search across all vector stores
+    for pdf_name, vector_store_path in metadata.items():
+        vectordb = FAISS.load_local(vector_store_path, embeddings=create_embeddings, allow_dangerous_deserialization=True)
+        retrieved_docs = vectordb.similarity_search_with_score(query, k=3)
 
+        for doc, score in retrieved_docs:
+            if score > highest_score:
+                highest_score = score
+                best_response = doc.page_content
+                source_pdf = pdf_name
 
-    llm_response = qa_chain(query)
-    print('llm_response: \n', llm_response)
-    return llm_response['result']
+    if best_response is None:
+        return "No relevant document found for this query."
+
+    return f"Answer: {best_response}\n(Source: {source_pdf})"
