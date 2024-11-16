@@ -10,7 +10,7 @@ uploaded_files = st.file_uploader("Upload PDFs", accept_multiple_files=True, typ
 if uploaded_files:
     if st.button("Process Documents"):
         st.write("Processing uploaded files...")
-        process_uploaded_files(uploaded_files)  # Process each file separately
+        process_uploaded_files(uploaded_files)  # Clear and process files
 
 # Chat Interface
 query = st.text_input("Ask a question about the uploaded PDFs:")

@@ -19,6 +19,7 @@ venv/
 # data folder 
 data/
 db/
+
 # IDE specific files (if you're using any)
 *.sublime-project
 *.sublime-workspace
